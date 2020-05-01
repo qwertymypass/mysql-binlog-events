@@ -1,0 +1,12 @@
+node_modules/
+dist/
+docs/
+
+coverage/
+tests/coverage/
+
+.vscode/
+.idea
+.DS_Store
+
+*.log

@@ -1,0 +1,19 @@
+# Dependency directory
+node_modules
+bower_components
+
+# Editors
+.idea
+*.iml
+
+# OS metadata
+.DS_Store
+
+# Logging files
+*.log
+
+.gitignore
+data
+src
+tslint.json
+tsconfig.json

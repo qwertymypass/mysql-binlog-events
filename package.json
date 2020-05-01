@@ -1,0 +1,37 @@
+{
+  "name": "mysql-binlog-events",
+  "version": "0.1.0",
+  "description": "For listening MySQL Binlog",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.js",
+  "author": "qwertymypass",
+  "readmeFilename": "Readme.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qwertymypass/mysql-binlog-events"
+  },
+  "license": "ISC",
+  "keywords": [
+    "node.js",
+    "mysql",
+    "binlog",
+    "events",
+    "watcher"
+  ],
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpileOnly ./src/index.ts",
+    "build": "rm -rf ./dist && ./node_modules/typescript/bin/tsc",
+    "lint": "tslint -c tslint.json 'src/**/*.ts' && prettier --write 'src/**/*.ts'"
+  },
+  "devDependencies": {
+    "@types/node": "^13.13.0",
+    "ts-node": "^8.8.2",
+    "ts-node-dev": "^1.0.0-pre.44",
+    "tslint": "^6.1.1",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "zongji": "^0.5.1"
+  }
+}
