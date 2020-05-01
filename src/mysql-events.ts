@@ -70,7 +70,7 @@ export default class MysqlEvent {
     }
 
     if (typeof trg.handler !== 'function') {
-      throw new Error('Handler must be a function'!);
+      throw new Error('Handler must be a function!');
     }
 
     trg.enable = true;
