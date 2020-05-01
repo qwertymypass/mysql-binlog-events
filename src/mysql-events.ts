@@ -7,7 +7,7 @@ export enum STATEMENTS {
   ALL = 'ALL'
 }
 
-export enum ACTIONS {
+enum ACTIONS {
   writerows = STATEMENTS.INSERT,
   updaterows = STATEMENTS.UPDATE,
   deleterows = STATEMENTS.DELETE
