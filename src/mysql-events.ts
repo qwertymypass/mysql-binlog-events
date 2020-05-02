@@ -1,44 +1,10 @@
 import Zongji from 'zongji';
-
-export enum STATEMENTS {
-  INSERT = 'INSERT',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELEETE',
-  ALL = 'ALL'
-}
+import { ITrigger, IMysqlOptions, STATEMENTS, IEvent } from './types';
 
 enum ACTIONS {
   writerows = STATEMENTS.INSERT,
   updaterows = STATEMENTS.UPDATE,
   deleterows = STATEMENTS.DELETE
-}
-
-export type IStatment = STATEMENTS.ALL | STATEMENTS.DELETE | STATEMENTS.INSERT | STATEMENTS.UPDATE;
-export type IDataType = null | object;
-export type IHandler = (event: IEvent) => void;
-
-export interface IMysqlOptions {
-  host: string;
-  user: string;
-  password: string;
-  port?: number | string;
-}
-
-export interface ITrigger {
-  handler: IHandler;
-  tag?: string;
-  expression?: string;
-  statement?: IStatment;
-  enable?: boolean;
-}
-
-export interface IEvent {
-  action: string;
-  timestamp: number;
-  database: string;
-  table: string;
-  changedColumns: string[];
-  data: { old: IDataType; new: IDataType };
 }
 
 export default class MysqlEvent {
@@ -60,11 +26,11 @@ export default class MysqlEvent {
 
   /**
    * Adds new trigger if tag or expressions this one is unique
-   * If tag or expressions exists then returns false
+   * If tag or expressions exists then returns null
    * @param {ITrigger} trg
-   * @returns {string|boolean}
+   * @returns {string|null}
    */
-  public add(trg: ITrigger): string | boolean {
+  public add(trg: ITrigger): string | null {
     if (!trg) {
       return;
     }
@@ -80,7 +46,7 @@ export default class MysqlEvent {
 
     const { expression, tag } = trg;
     if (this.triggers.has(tag) || this.tags.has(expression)) {
-      return false;
+      return null;
     }
 
     this.tags.set(expression, tag);
@@ -99,11 +65,12 @@ export default class MysqlEvent {
       return '*';
     }
 
-    if (expression.split('.').length !== 2) {
+    const parts = expression.split('.');
+    if (parts.length !== 2) {
       throw new Error('The expression must consist of two parts [ database/*.table/* ] or character [ */*.* ]');
     }
 
-    return expression;
+    return parts[0] === '' ? `*.${parts[1]}` : parts[1] === '' ? `${parts[0]}.*` : expression;
   }
 
   /**
