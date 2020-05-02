@@ -1,8 +1,8 @@
 {
   "name": "mysql-binlog-events",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "For listening MySQL Binlog",
-  "types": "dist/index.d.ts",
+  "types": "dist/mysql-events.d.ts",
   "main": "dist/index.js",
   "author": "qwertymypass",
   "readmeFilename": "Readme.md",
