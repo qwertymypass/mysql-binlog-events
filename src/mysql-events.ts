@@ -3,7 +3,7 @@ import Zongji from 'zongji';
 export enum STATEMENTS {
   INSERT = 'INSERT',
   UPDATE = 'UPDATE',
-  DELETE = 'DELEETE',
+  DELETE = 'DELETE',
   ALL = 'ALL'
 }
 
