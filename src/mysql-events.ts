@@ -14,7 +14,7 @@ export enum ACTIONS {
 }
 
 export type IStatment = STATEMENTS.ALL | STATEMENTS.DELETE | STATEMENTS.INSERT | STATEMENTS.UPDATE;
-export type IDataType = null | object;
+export type IDataType<T> = null | T;
 export type IHandler = (event: IEvent) => void;
 
 export interface IMysqlOptions {
@@ -38,19 +38,16 @@ export interface IEvent {
   database: string;
   table: string;
   changedColumns: string[];
-  data: { old: IDataType; new: IDataType };
+  data: { old: IDataType<object>; new: IDataType<object> };
 }
 
 export default class MysqlEvent {
   private readonly zongji: Zongji;
-  private triggers: Map<string, ITrigger>;
-  private tags: Map<string, string>;
+  private triggers: Map<string, ITrigger> = new Map();
+  private tags: Map<string, string> = new Map();
 
   constructor(mysqlSettings: IMysqlOptions) {
     this.zongji = new Zongji(mysqlSettings);
-    this.triggers = new Map();
-    this.tags = new Map();
-
     this.init();
   }
 
@@ -107,51 +104,28 @@ export default class MysqlEvent {
     return parts[0] === '' ? `*.${parts[1]}` : parts[1] === '' ? `${parts[0]}.*` : expression;
   }
 
-  /**
-   * Stop trigger by tag if exists (enabled = false)
-   * @param {string} tag
-   * @returns {MysqlEvent}
-   */
   public stop(tag: string): MysqlEvent {
     const trg = this.triggers.get(tag);
     trg && (trg.enable = false);
     return this;
   }
 
-  /**
-   * Starts trigger by tag if exists (enabled = true)
-   * @param {string} tag
-   * @returns {MysqlEvent}
-   */
   public start(tag: string): MysqlEvent {
     const trg = this.triggers.get(tag);
     trg && (trg.enable = true);
     return this;
   }
 
-  /**
-   * Removes tigger by tag if exists
-   * @param {string} tag
-   * @returns {MysqlEvent}
-   */
   public remove(tag: string): MysqlEvent {
     this.triggers.delete(tag);
     return this;
   }
 
-  /**
-   * Stop listening binlog
-   * @returns {MysqlEvent}
-   */
   public stopAll(): MysqlEvent {
     this.zongji.stop();
     return this;
   }
 
-  /**
-   * Starts listening binlog
-   * @returns {MysqlEvent}
-   */
   public satrtAll(): MysqlEvent {
     this.init();
     return this;
@@ -178,13 +152,6 @@ export default class MysqlEvent {
     }
   }
 
-  /**
-   * Parse blEvent for make evet object
-   * @param {string} action
-   * @param {string} path
-   * @param {number} timestamp
-   * @returns {IEvent}
-   */
   private getEventObject(action: string, path: string, timestamp: number): IEvent {
     const [database, table] = path.split('.');
 
@@ -263,10 +230,6 @@ export default class MysqlEvent {
     return triggers;
   }
 
-  /**
-   * Generates random string for tag
-   * @returns {string}
-   */
   private getRandomTag(): string {
     return Math.random()
       .toString(36)
@@ -274,24 +237,22 @@ export default class MysqlEvent {
       .substr(0, 7);
   }
 
-  /**
-   * Initialize zongji. Adds handlers
-   */
+  private binlogCallback(event: any) {
+    const action = ACTIONS[event.getEventName()];
+    if (!action) {
+      return;
+    }
+
+    this.eventHandler(event, action);
+  }
+
   private init(): void {
-    const onBinlog = ((blEvent: any) => {
-      const action = ACTIONS[blEvent.getEventName()];
-      if (!action) {
-        return;
-      }
-
-      this.eventHandler(blEvent, action);
-    }).bind(this);
-
-    this.zongji.on('binlog', onBinlog);
+    this.zongji.removeListener('binlog', this.binlogCallback.bind(this));
+    this.zongji.on('binlog', this.binlogCallback.bind(this));
 
     this.zongji.on('error', (err: Error) => {
       this.zongji.stop();
-      this.zongji.removeListener('binlog', onBinlog);
+      this.zongji.removeListener('binlog', this.binlogCallback.bind(this));
       console.error(err);
     });
 
