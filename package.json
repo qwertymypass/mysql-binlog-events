@@ -1,6 +1,6 @@
 {
   "name": "mysql-binlog-events",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "For listening MySQL Binlog",
   "types": "dist/mysql-events.d.ts",
   "main": "dist/index.js",

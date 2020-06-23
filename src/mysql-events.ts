@@ -34,11 +34,16 @@ export interface ITrigger {
 
 export interface IEvent {
   action: string;
-  timestamp: number;
+  timestamp: Date;
   database: string;
   table: string;
   changedColumns: string[];
   data: { old: IDataType<object>; new: IDataType<object> };
+}
+
+export interface ITemplate {
+  path: string;
+  timestamp: Date;
 }
 
 export default class MysqlEvent {
@@ -58,30 +63,30 @@ export default class MysqlEvent {
   /**
    * Adds new trigger if tag or expressions this one is unique
    * If tag or expressions exists then returns null
-   * @param {ITrigger} trg
+   * @param {ITrigger} trigger
    * @returns {string|null}
    */
-  public add(trg: ITrigger): string | null {
-    if (!trg) {
+  public add(trigger: ITrigger): string | null {
+    if (!trigger) {
       return;
     }
 
-    if (typeof trg.handler !== 'function') {
+    if (typeof trigger.handler !== 'function') {
       throw new Error('Handler must be a function!');
     }
 
-    trg.enable = true;
-    trg.statement = trg.statement || STATEMENTS.ALL;
-    trg.tag = trg.tag || this.getRandomTag();
-    trg.expression = this.checkExpression(trg.expression);
+    trigger.enable = true;
+    trigger.statement = trigger.statement || STATEMENTS.ALL;
+    trigger.tag = trigger.tag || this.getRandomTag();
+    trigger.expression = this.checkExpression(trigger.expression);
 
-    const { expression, tag } = trg;
+    const { expression, tag } = trigger;
     if (this.triggers.has(tag) || this.tags.has(expression)) {
       return null;
     }
 
     this.tags.set(expression, tag);
-    this.triggers.set(tag, trg);
+    this.triggers.set(tag, trigger);
 
     return tag;
   }
@@ -105,14 +110,14 @@ export default class MysqlEvent {
   }
 
   public stop(tag: string): MysqlEvent {
-    const trg = this.triggers.get(tag);
-    trg && (trg.enable = false);
+    const trigger = this.triggers.get(tag);
+    trigger && (trigger.enable = false);
     return this;
   }
 
   public start(tag: string): MysqlEvent {
-    const trg = this.triggers.get(tag);
-    trg && (trg.enable = true);
+    const trigger = this.triggers.get(tag);
+    trigger && (trigger.enable = true);
     return this;
   }
 
@@ -145,24 +150,10 @@ export default class MysqlEvent {
       return;
     }
 
-    const eventObject = this.getEventObject(action, path, timestamp);
-    const events = this.getManyEvents(eventObject, action, rows);
-    for (const trg of triggers) {
-      events.forEach((evt: IEvent) => trg.handler(evt));
+    const events = this.getManyEvents(action, rows, { path, timestamp });
+    for (const trigger of triggers) {
+      events.forEach((evt: IEvent) => trigger.handler(evt));
     }
-  }
-
-  private getEventObject(action: string, path: string, timestamp: number): IEvent {
-    const [database, table] = path.split('.');
-
-    return {
-      action,
-      database,
-      table,
-      timestamp,
-      changedColumns: [],
-      data: { old: null, new: null }
-    };
   }
 
   /**
@@ -172,9 +163,11 @@ export default class MysqlEvent {
    * @param {any[]} rows
    * @returns {IEvent[]}
    */
-  private getManyEvents(event: IEvent, action: string, rows: any[]): IEvent[] {
+  private getManyEvents(action: string, rows: any[], template: ITemplate): IEvent[] {
     const payloads: IEvent[] = [];
-    rows.forEach((row: any) => {
+
+    for (const row of rows) {
+      const event = this.getEventTemplate(action, template);
       if (action === STATEMENTS.INSERT) {
         event.data.new = row;
       }
@@ -197,9 +190,29 @@ export default class MysqlEvent {
       }
 
       payloads.push(event);
-    });
+    }
 
+    console.log(JSON.stringify(payloads, null, 2));
     return payloads;
+  }
+
+  /**
+   * Returns event template
+   * @param {string} action
+   * @param {template} ITemplate
+   * @returns {IEvent}
+   */
+  private getEventTemplate(action: string, template: ITemplate): IEvent {
+    const [database, table] = template.path.split('.');
+
+    return {
+      action,
+      database,
+      table,
+      timestamp: template.timestamp,
+      changedColumns: [],
+      data: { old: null, new: null }
+    };
   }
 
   /**
@@ -220,10 +233,10 @@ export default class MysqlEvent {
         return;
       }
 
-      const trg = this.triggers.get(tag);
-      const { statement, enable } = trg;
+      const trigger = this.triggers.get(tag);
+      const { statement, enable } = trigger;
       if ((statement === STATEMENTS.ALL || statement === action) && enable === true) {
-        triggers.push(trg);
+        triggers.push(trigger);
       }
     });
 
