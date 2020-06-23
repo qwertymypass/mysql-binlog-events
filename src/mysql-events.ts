@@ -192,7 +192,6 @@ export default class MysqlEvent {
       payloads.push(event);
     }
 
-    console.log(JSON.stringify(payloads, null, 2));
     return payloads;
   }
 
